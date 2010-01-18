@@ -8,6 +8,11 @@
 @syncodeindex vr cp
 @c %**end of header
 
+@dircategory Development
+@direntry
+* Check: (check)Introduction.
+@end direntry
+
 @copying
 This manual is for Check
 (version @value{VERSION}, @value{UPDATED}),
@@ -25,11 +30,6 @@ Back-Cover Texts.  A copy of the license is included in the section
 entitled ``@acronym{GNU} Free Documentation License.''
 @end quotation
 @end copying
-
-@dircategory Software development
-@direntry
-* Check: (check)Introduction.
-@end direntry
 
 @titlepage
 @title Check

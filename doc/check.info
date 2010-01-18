@@ -1,6 +1,11 @@
 This is check.info, produced by makeinfo version 4.11 from check.texi.
 
-This manual is for Check (version 0.9.8, 23 September 2009), a unit
+INFO-DIR-SECTION Development
+START-INFO-DIR-ENTRY
+* Check: (check).               Introduction
+END-INFO-DIR-ENTRY
+
+	This manual is for Check (version 0.9.8, 23 September 2009), a unit
 testing framework for C.
 
    Copyright (C) 2001-2009 Arien Malec, Chris Pickett, Fredrik
@@ -12,11 +17,6 @@ Hugosson, and Robert Lemmen.
      Foundation; with no Invariant Sections, no Front-Cover texts, and
      no Back-Cover Texts.  A copy of the license is included in the
      section entitled "GNU Free Documentation License."
-
-INFO-DIR-SECTION Software development
-START-INFO-DIR-ENTRY
-* Check: (check)Introduction.
-END-INFO-DIR-ENTRY
 
 
 File: check.info,  Node: Top,  Next: Introduction,  Prev: (dir),  Up: (dir)
