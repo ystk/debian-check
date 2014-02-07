@@ -7,5 +7,5 @@ Name: Check
 Description: A unit test framework for C
 URL: http://check.sourceforge.net
 Version: @VERSION@
-Libs: -L${libdir} -lcheck
+Libs: -L${libdir} -lcheck_pic
 Cflags: -I${includedir}

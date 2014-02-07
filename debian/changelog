@@ -1,3 +1,17 @@
+check (0.9.8-2) unstable; urgency=low
+
+  * Revert stupid change to check.m4 (closes: #528047, #581354)
+
+ -- Robert Lemmen <robertle@semistable.com>  Thu, 31 May 2012 19:05:16 +0100
+
+check (0.9.8-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * -lcheck_pic provides instead of -lcheck by pkg-config.
+    (Closes: #605207)
+
+ -- Nobuhiro Iwamatsu <iwamatsu@debian.org>  Mon, 26 Dec 2011 19:58:15 +0900
+
 check (0.9.8-1) unstable; urgency=low
 
   * New upstream release (closes: #547736)
