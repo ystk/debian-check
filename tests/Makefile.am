@@ -4,6 +4,7 @@ TESTS = \
 	check_check_export	\
 	check_check		\
 	test_output.sh		\
+	test_check_nofork.sh \
 	test_xml_output.sh	\
 	test_log_output.sh
 
@@ -20,11 +21,12 @@ noinst_PROGRAMS = \
 	check_check	\
 	check_stress	\
 	check_thread_stress \
+	check_nofork \
 	ex_output	\
 	ex_xml_output	\
 	ex_log_output
 
-EXTRA_DIST = test_output.sh test_log_output.sh test_vars.in test_xml_output.sh
+EXTRA_DIST = test_output.sh test_check_nofork.sh test_log_output.sh test_vars.in test_xml_output.sh
 
 if NO_TIMEOUT_TESTS
 check_check_CFLAGS = -DTIMEOUT_TESTS_ENABLED=0
@@ -53,6 +55,7 @@ check_check_SOURCES = \
 	check_check_fixture.c		\
 	check_check_pack.c		\
 	check_check_exit.c		\
+        check_check_selective.c         \
 	check_check_main.c
 check_check_LDADD = $(top_builddir)/src/libcheckinternal.la $(top_builddir)/lib/libcompat.la
 
@@ -62,6 +65,9 @@ check_stress_LDADD = $(top_builddir)/src/libcheck.la $(top_builddir)/lib/libcomp
 check_thread_stress_SOURCES = check_thread_stress.c
 check_thread_stress_LDADD = $(top_builddir)/src/libcheck.la $(top_builddir)/lib/libcompat.la @PTHREAD_LIBS@
 check_thread_stress_CFLAGS = @PTHREAD_CFLAGS@
+
+check_nofork_SOURCES = check_nofork.c
+check_nofork_LDADD = $(top_builddir)/src/libcheck.la $(top_builddir)/lib/libcompat.la
 
 ex_output_SOURCES = ex_output.c
 ex_output_LDADD = $(top_builddir)/src/libcheck.la $(top_builddir)/lib/libcompat.la

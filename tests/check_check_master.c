@@ -47,9 +47,28 @@ static master_test_t master_tests[] = {
   { "Simple Tests", CK_FAILURE, "Assertion '0' failed" },
   { "Simple Tests", CK_FAILURE, "Assertion 'x==y' failed: x==3, y==4" },
   { "Simple Tests", CK_FAILURE, "Assertion 'x!=y' failed: x==3, y==3" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x<x' failed: x==2, x==2" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'y<=x' failed: y==3, x==2" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'y>y' failed: y==3, y==3" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x>=y' failed: x==2, y==3" },
+  { "Simple Tests", CK_PASS,    "Passed" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x==y' failed: x==3, y==4" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x!=y' failed: x==3, y==3" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x<x' failed: x==2, x==2" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'y<=x' failed: y==3, x==2" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'y>y' failed: y==3, y==3" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x>=y' failed: x==2, y==3" },
+  { "Simple Tests", CK_PASS,    "Passed" },
   { "Simple Tests", CK_FAILURE, "Assertion '\"test1\"==s' failed: \"test1\"==\"test1\", s==\"test2\"" },
   { "Simple Tests", CK_FAILURE, "Assertion 't!=s' failed: t==\"test2\", s==\"test2\"" },
-
+  { "Simple Tests", CK_FAILURE, "Assertion 's<s' failed: s==\"test1\", s==\"test1\"" },
+  { "Simple Tests", CK_FAILURE, "Assertion 't<=s' failed: t==\"test2\", s==\"test1\"" },
+  { "Simple Tests", CK_FAILURE, "Assertion 't>t' failed: t==\"test2\", t==\"test2\"" },
+  { "Simple Tests", CK_FAILURE, "Assertion 's>=t' failed: s==\"test1\", t==\"test2\"" },
+  { "Simple Tests", CK_PASS,    "Passed" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x==y' failed: x==0x1, y==0x2" },
+  { "Simple Tests", CK_FAILURE, "Assertion 'x!=z' failed: x==0x1, z==0x1" },
+  
   { "Signal Tests", CK_ERROR,   signal_11_str },
   { "Signal Tests", CK_PASS,    "Passed" },
   { "Signal Tests", CK_ERROR,   signal_11_8_str },
@@ -60,37 +79,112 @@ static master_test_t master_tests[] = {
 
 #if TIMEOUT_TESTS_ENABLED
 #if HAVE_WORKING_SETENV
-  { "Environment Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "Environment Timeout Tests", CK_PASS,   "Passed" },
-  { "Environment Timeout Tests", CK_PASS,   "Passed" },
-  { "Environment Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Integer Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Integer Timeout Tests", CK_PASS,   "Passed" },
+  { "Environment Integer Timeout Tests", CK_PASS,   "Passed" },
+  { "Environment Integer Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  
+  { "Environment Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Environment Double Timeout Tests", CK_PASS,  "Passed" },
+  { "Environment Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+#endif /* HAVE_LIBRT */
+  { "Environment Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
 #endif
-  { "Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "Timeout Tests", CK_PASS,   "Passed" },
-  { "Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "User Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "User Timeout Tests", CK_PASS,   "Passed" },
-  { "User Timeout Tests", CK_PASS,   "Passed" },
-  { "User Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  /* Timeout tests are run twice , see check_check_sub.c:make_sub_suite() */
-  { "Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "Timeout Tests", CK_PASS,   "Passed" },
-  { "Timeout Tests", CK_ERROR,  "Test timeout expired" },
-  { "Timeout Tests", CK_ERROR,  "Test timeout expired" },
+
+  { "Default Timeout Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Default Timeout Tests", CK_PASS,   "Passed" },
+  { "Default Timeout Tests", CK_PASS,   "Passed" },
+#endif /* HAVE_LIBRT */
+  { "Default Timeout Tests", CK_PASS,   "Passed" },
+  { "Default Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "Default Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  
+  { "User Integer Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "User Integer Timeout Tests", CK_PASS,   "Passed" },
+  { "User Integer Timeout Tests", CK_PASS,   "Passed" },
+  { "User Integer Timeout Tests", CK_ERROR,  "Test timeout expired" },
+
+  { "User Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "User Double Timeout Tests", CK_PASS,   "Passed" },
+  { "User Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+#endif /* HAVE_LIBRT */
+  { "User Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "User Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "User Double Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  
+  /* Default Timeout tests are run twice , see check_check_sub.c:make_sub_suite() */
+  { "Default Timeout Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Default Timeout Tests", CK_PASS,   "Passed" },
+  { "Default Timeout Tests", CK_PASS,   "Passed" },
+#endif /* HAVE_LIBRT */
+  { "Default Timeout Tests", CK_PASS,   "Passed" },
+  { "Default Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  { "Default Timeout Tests", CK_ERROR,  "Test timeout expired" },
+  
 #if HAVE_WORKING_SETENV
-  { "Environment Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
-  { "Environment Timeout Scaling Tests", CK_PASS,   "Passed" },
-  { "Environment Timeout Scaling Tests", CK_PASS,   "Passed" },
-  { "Environment Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
-  { "Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
-  { "Timeout Scaling Tests", CK_PASS,   "Passed" },
-  { "Timeout Scaling Tests", CK_PASS,   "Passed" },
-  { "Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
-  { "User Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
-  { "User Timeout Scaling Tests", CK_PASS,   "Passed" },
-  { "User Timeout Scaling Tests", CK_PASS,   "Passed" },
-  { "User Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Integer Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Environment Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "Environment Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+#endif /* HAVE_LIBRT */
+  { "Environment Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "Environment Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "Environment Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "Environment Integer Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+
+  { "Environment Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Environment Double Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "Environment Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#endif /* HAVE_LIBRT */
+  { "Environment Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "Environment Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  
+  { "Timeout Integer Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Timeout Integer Scaling Tests", CK_PASS,   "Passed" },
+  { "Timeout Integer Scaling Tests", CK_PASS,   "Passed" },
+  { "Timeout Integer Scaling Tests", CK_PASS,   "Passed" },
+#endif /* HAVE_LIBRT */
+  { "Timeout Integer Scaling Tests", CK_PASS,   "Passed" },
+  { "Timeout Integer Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  
+  { "Timeout Double Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "Timeout Double Scaling Tests", CK_PASS,   "Passed" },
+  { "Timeout Double Scaling Tests", CK_PASS,   "Passed" },
+#endif /* HAVE_LIBRT */
+  { "Timeout Double Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "Timeout Double Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "Timeout Double Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  
+  { "User Integer Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "User Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "User Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+#endif /* HAVE_LIBRT */
+  { "User Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "User Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "User Integer Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "User Integer Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  
+  { "User Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#ifdef HAVE_LIBRT
+  { "User Double Timeout Scaling Tests", CK_PASS,   "Passed" },
+  { "User Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+#endif /* HAVE_LIBRT */
+  { "User Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "User Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "User Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
+  { "User Double Timeout Scaling Tests", CK_ERROR,  "Test timeout expired" },
 #endif
 #endif
 
@@ -123,7 +217,7 @@ START_TEST(test_check_nfailures)
       failed++;
     }
   }
-  fail_unless (sub_nfailed == failed,
+  ck_assert_msg (sub_nfailed == failed,
                "Unexpected number of failures received, %d, expected %d.",
                sub_nfailed, failed);
 }
@@ -131,8 +225,8 @@ END_TEST
 
 START_TEST(test_check_ntests_run)
 {
-  fail_unless (sub_ntests == nr_of_master_tests,
-               "Unexpected number of tests run, %d.", sub_ntests);
+  ck_assert_msg (sub_ntests == nr_of_master_tests,
+               "Unexpected number of tests run %d vs expected %d", sub_ntests, nr_of_master_tests);
 }
 END_TEST
 
@@ -150,16 +244,16 @@ START_TEST(test_check_failure_msgs)
       continue;
     }
 
-    fail_if(i - passed > sub_nfailed, NULL);
+    ck_assert_msg(i - passed <= sub_nfailed, NULL);
     tr = tr_fail_array[i - passed];
-    fail_unless(tr != NULL, NULL);
+    ck_assert_msg(tr != NULL, NULL);
     got_msg = tr_msg(tr);
     expected_msg = master_tests[i].msg;
     if (strcmp(got_msg, expected_msg) != 0) {      
       char *emsg = malloc(MAXSTR);
       snprintf(emsg, MAXSTR,"For test %d: Expected %s, got %s",
                i, expected_msg, got_msg);
-      fail(emsg);
+      ck_abort_msg(emsg);
       free(emsg);
     }
   }
@@ -179,15 +273,15 @@ START_TEST(test_check_failure_lnos)
       continue;
     }
 
-    fail_if(i - passed > sub_nfailed, NULL);
+    ck_assert_msg(i - passed <= sub_nfailed, NULL);
     tr = tr_fail_array[i - passed];
-    fail_unless(tr != NULL, NULL);
+    ck_assert_msg(tr != NULL, NULL);
     line_no = master_tests_lineno[i];
     if (line_no > 0 && tr_lno(tr) != line_no) {
       char *emsg = malloc(MAXSTR);
       snprintf(emsg, MAXSTR, "For test %d: Expected lno %d, got %d",
                i, line_no, tr_lno(tr));
-      fail(emsg);
+      ck_abort_msg(emsg);
       free(emsg);
     }    
   }
@@ -206,10 +300,10 @@ START_TEST(test_check_failure_ftypes)
       continue;
     }
 
-    fail_if(i - passed > sub_nfailed, NULL);
+    ck_assert_msg(i - passed <= sub_nfailed, NULL);
     tr = tr_fail_array[i - passed];
-    fail_unless(tr != NULL, NULL);
-    fail_unless(master_tests[i].failure_type == tr_rtype(tr),
+    ck_assert_msg(tr != NULL, NULL);
+    ck_assert_msg(master_tests[i].failure_type == tr_rtype(tr),
                 "Failure type wrong for test %d", i);
   }
 }
@@ -220,9 +314,9 @@ START_TEST(test_check_failure_lfiles)
   int i;
   for (i = 0; i < sub_nfailed; i++) {
     TestResult *tr = tr_fail_array[i];
-    fail_unless(tr != NULL, NULL);
-    fail_unless(tr_lfile(tr) != NULL, "Bad file name for test %d", i);
-    fail_unless(strstr(tr_lfile(tr), "check_check_sub.c") != 0,
+    ck_assert_msg(tr != NULL, NULL);
+    ck_assert_msg(tr_lfile(tr) != NULL, "Bad file name for test %d", i);
+    ck_assert_msg(strstr(tr_lfile(tr), "check_check_sub.c") != 0,
                 "Bad file name for test %d", i);
   }
 }
@@ -236,7 +330,7 @@ START_TEST(test_check_tcnames)
     char *emsg = malloc (MAXSTR);
     snprintf(emsg, MAXSTR,"Expected %s, got %s",
              master_tests[_i].tcname, tcname);
-    fail(emsg);
+    ck_abort_msg(emsg);
     free(emsg);
   } 
 }
@@ -251,7 +345,7 @@ START_TEST(test_check_all_msgs)
     char *emsg = malloc (MAXSTR);
     snprintf(emsg, MAXSTR,"Expected %s, got %s",
              master_tests[_i].msg, msg);
-    fail(emsg);
+    ck_abort_msg(emsg);
     free(emsg);
   }
 }
@@ -259,7 +353,7 @@ END_TEST
 
 START_TEST(test_check_all_ftypes)
 {
-  fail_unless(master_tests[_i].failure_type == tr_rtype(tr_all_array[_i]),
+  ck_assert_msg(master_tests[_i].failure_type == tr_rtype(tr_all_array[_i]),
               "Failure type wrong for test %d", _i);
 }
 END_TEST
@@ -272,7 +366,7 @@ static void test_fixture_setup(void)
 
 START_TEST(test_setup)
 {
-  fail_unless (test_fixture_val == 1,
+  ck_assert_msg (test_fixture_val == 1,
 	       "Value not setup or changed across tests correctly");
   test_fixture_val = 2;
 }
@@ -285,7 +379,7 @@ static void test_fixture_teardown (void)
 
 START_TEST(test_teardown)
 {
-  fail_unless (test_fixture_val == 3,
+  ck_assert_msg (test_fixture_val == 3,
 	       "Value not changed correctly in teardown");
 }
 END_TEST  
@@ -347,7 +441,7 @@ void setup (void)
   Suite *s = make_sub_suite();
   SRunner *sr = srunner_create(s);
 
-  init_master_tests_lineno();
+  init_master_tests_lineno(nr_of_master_tests);
   init_signal_strings();
 
   srunner_add_suite(sr, make_sub2_suite());

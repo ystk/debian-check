@@ -99,8 +99,68 @@ const char *strsignal (int sig);
 #endif /* !HAVE_DECL_STRSIGNAL */
 
 #if !HAVE_DECL_UNSETENV
-void unsetenv (const char *name);
+int unsetenv (const char *name);
 #endif /* !HAVE_DECL_UNSETENV */
+
+#ifndef HAVE_LIBRT
+/* 
+ * On systems where clock_gettime() is not available, the
+ * definition for CLOCK_MONOTONIC will also not be available.
+ * This variable should define which type of clock clock_gettime()
+ * should use. We define it here if it is not defined simply
+ * so the reimplementation can ignore it.
+ */
+#ifndef CLOCK_MONOTONIC
+#define CLOCK_MONOTONIC 0
+#endif
+
+#ifdef STRUCT_ITIMERSPEC_DEFINITION_MISSING
+/* 
+ * The following structure is defined in POSIX.1b for timer start values and intervals.
+ * If it is not defined in time.h, then we need to define it here.
+ */
+struct itimerspec
+{
+    struct timespec it_interval;
+    struct timespec it_value;
+};
+#endif
+
+/* 
+ * As the functions which use timer_t are not defined on the system, 
+ * the timer_t type probably also is not defined.
+ */
+typedef int timer_t;
+
+int clock_gettime(int clk_id, struct timespec *ts);
+int timer_create(int clockid, struct sigevent *sevp, timer_t *timerid);
+int timer_settime(timer_t timerid, int flags, const struct itimerspec *new_value, struct itimerspec * old_value);
+int timer_delete(timer_t timerid);
+#endif /* HAVE_LIBRT */
+
+/*
+ * The following checks are to determine if the system's
+ * snprintf (or its variants) should be replaced with
+ * the C99 compliant version in libcompat.
+ */
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+#if HAVE_STDARG_H
+#include <stdarg.h>
+#if !HAVE_VSNPRINTF
+int rpl_vsnprintf(char *, size_t, const char *, va_list);
+#endif
+#if !HAVE_SNPRINTF
+int rpl_snprintf(char *, size_t, const char *, ...);
+#endif
+#if !HAVE_VASPRINTF
+int rpl_vasprintf(char **, const char *, va_list);
+#endif
+#if !HAVE_ASPRINTF
+int rpl_asprintf(char **, const char *, ...);
+#endif
+#endif /* HAVE_STDARG_H */
 
 /* silence warnings about an empty library */
 void ck_do_nothing (void);

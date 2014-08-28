@@ -13,7 +13,7 @@ static char errm[200];
 
 static void fixture_sub_setup (void)
 {
-  fail("Test failure in fixture");
+  ck_abort_msg("Test failure in fixture");
 }
 
 static SRunner *fixture_sr;
@@ -43,7 +43,7 @@ START_TEST(test_fixture_fail_counts)
   nrun = srunner_ntests_run(fixture_sr);
   nfail = srunner_ntests_failed(fixture_sr);
 
-  fail_unless (nrun == 1 && nfail == 1,
+  ck_assert_msg (nrun == 1 && nfail == 1,
 	       "Counts for run and fail for fixture failure not correct");
 }
 END_TEST
@@ -53,7 +53,7 @@ START_TEST(test_print_counts)
   char *srstat = sr_stat_str(fixture_sr);
   const char *exp = "0%: Checks: 1, Failures: 1, Errors: 0";
 
-  fail_unless(strcmp(srstat, exp) == 0,
+  ck_assert_msg(strcmp(srstat, exp) == 0,
 	      "SRunner stat string incorrect with setup failure");
   free(srstat);
 }
@@ -73,7 +73,7 @@ START_TEST(test_setup_failure_msg)
     snprintf(errm, sizeof(errm),
 	     "Bad setup tr msg (%s)", trm);
     
-    fail (errm);
+    ck_abort_msg (errm);
   }
   free(trm);
 }
@@ -95,9 +95,9 @@ static void sub_ch_teardown_norm(void)
 START_TEST(test_sub_ch_setup_norm)
 {
   if (testval_up == 1)
-    fail("Setup not run correctly");
+    ck_abort_msg("Setup not run correctly");
   else if (testval_up > 3)
-    fail("Test side-effects persist across runs");
+    ck_abort_msg("Test side-effects persist across runs");
   testval_up++;
 }
 END_TEST
@@ -117,7 +117,7 @@ START_TEST(test_ch_setup)
   tcase_add_checked_fixture(tc,sub_ch_setup_norm,sub_ch_teardown_norm);
   srunner_run_all(sr, CK_VERBOSE);
 
-  fail_unless(srunner_ntests_failed(sr) == 0,
+  ck_assert_msg(srunner_ntests_failed(sr) == 0,
 	      "Checked setup not being run correctly");
 
   srunner_free(sr);
@@ -126,12 +126,12 @@ END_TEST
 
 static void setup_sub_fail (void)
 {
-  fail("Failed setup"); /* check_check_fixture.c:129 */
+  ck_abort_msg("Failed setup"); /* check_check_fixture.c:129 */
 }
 
 static void teardown_sub_fail (void)
 {
-  fail("Failed teardown");
+  ck_abort_msg("Failed teardown");
 }
 
 static void setup_sub_signal (void)
@@ -148,13 +148,13 @@ static void teardown_sub_signal(void)
 
 START_TEST(test_sub_fail)
 {
-  fail("Should never run");
+  ck_abort_msg("Should never run");
 }
 END_TEST
 
 START_TEST(test_sub_pass)
 {
-  fail_unless(1 == 1, "Always pass");
+  ck_assert_msg(1 == 1, "Always pass");
 }
 END_TEST
 
@@ -174,17 +174,17 @@ START_TEST(test_ch_setup_fail)
   sr = srunner_create(s);
   srunner_run_all(sr,CK_VERBOSE);
 
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked setup failure");
-  fail_unless (srunner_ntests_failed(sr) == 1,
+  ck_assert_msg (srunner_ntests_failed(sr) == 1,
 	       "Failure counts not correct for checked setup failure");
 
   strstat= sr_stat_str(sr);
 
-  fail_unless(strcmp(strstat,
+  ck_assert_msg(strcmp(strstat,
 		     "0%: Checks: 1, Failures: 1, Errors: 0") == 0,
 	      "SRunner stat string incorrect with checked setup failure");
-
+  free(strstat);
 
   trm = tr_str(srunner_failures(sr)[0]);
    /* Search for check_check_fixture.c:129 if this fails. */
@@ -194,8 +194,9 @@ START_TEST(test_ch_setup_fail)
     snprintf(errm, sizeof(errm),
 	     "Bad failed checked setup tr msg (%s)", trm);
     
-    fail (errm);
+    ck_abort_msg (errm);
   }
+  free(trm);
 }
 END_TEST
 
@@ -214,9 +215,9 @@ START_TEST(test_ch_setup_fail_nofork)
   srunner_set_fork_status(sr, CK_NOFORK);
   srunner_run_all(sr, CK_VERBOSE);
 
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked setup failure");
-  fail_unless (srunner_ntests_failed(sr) == 1,
+  ck_assert_msg (srunner_ntests_failed(sr) == 1,
 	       "Failure counts not correct for checked setup failure");
 }
 END_TEST
@@ -237,9 +238,9 @@ START_TEST(test_ch_setup_fail_nofork_2)
   srunner_set_fork_status(sr, CK_NOFORK);
   srunner_run_all(sr, CK_VERBOSE);
 
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked setup failure");
-  fail_unless (srunner_ntests_failed(sr) == 1,
+  ck_assert_msg (srunner_ntests_failed(sr) == 1,
 	       "Failure counts not correct for checked setup failure");
 }
 END_TEST
@@ -262,12 +263,12 @@ START_TEST(test_ch_setup_pass_nofork)
   testval_up = 1;
   testval_down = 1;
   srunner_run_all(sr, CK_VERBOSE);
-  fail_unless(testval_up == 7, "Multiple setups failed");
-  fail_unless(testval_down == 7, "Multiple teardowns failed");
+  ck_assert_msg(testval_up == 7, "Multiple setups failed");
+  ck_assert_msg(testval_down == 7, "Multiple teardowns failed");
 
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked setup failure");
-  fail_unless (srunner_ntests_failed(sr) == 0,
+  ck_assert_msg (srunner_ntests_failed(sr) == 0,
 	       "Failure counts not correct for checked setup failure");
 }
 END_TEST
@@ -288,17 +289,17 @@ START_TEST(test_ch_setup_sig)
   sr = srunner_create(s);
   srunner_run_all(sr,CK_VERBOSE);
 
-  fail_unless (srunner_ntests_failed(sr) == 1,
+  ck_assert_msg (srunner_ntests_failed(sr) == 1,
 	       "Failure counts not correct for checked setup signal");
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked setup signal");
 
   strstat= sr_stat_str(sr);
 
-  fail_unless(strcmp(strstat,
+  ck_assert_msg(strcmp(strstat,
 		     "0%: Checks: 1, Failures: 0, Errors: 1") == 0,
 	      "SRunner stat string incorrect with checked setup signal");
-
+  free(strstat);
 
   trm = tr_str(srunner_failures(sr)[0]);
 
@@ -309,26 +310,27 @@ START_TEST(test_ch_setup_sig)
     snprintf(errm, sizeof(errm),
 	     "Msg was (%s)", trm);
     
-    fail (errm);
+    ck_abort_msg (errm);
   }
+  free(trm);
 }
 END_TEST
 
 static void sub_ch_setup_dual_1(void)
 {
-  fail_unless(testval_up == 1, "Wrong start value");
+  ck_assert_msg(testval_up == 1, "Wrong start value");
   testval_up += 2;
 }
 
 static void sub_ch_setup_dual_2(void)
 {
-  fail_unless(testval_up == 3, "First setup failed");
+  ck_assert_msg(testval_up == 3, "First setup failed");
   testval_up += 3;
 }
 
 START_TEST(test_sub_two_setups)
 {
-  fail_unless(testval_up == 6, "Multiple setups failed");
+  ck_assert_msg(testval_up == 6, "Multiple setups failed");
 }
 END_TEST
 
@@ -348,7 +350,7 @@ START_TEST(test_ch_setup_two_setups_fork)
   testval_up = 1;
   srunner_run_all(sr, CK_VERBOSE);
 
-  fail_unless(srunner_ntests_failed(sr) == 0,
+  ck_assert_msg(srunner_ntests_failed(sr) == 0,
 	      "Problem with several setups");
 
   srunner_free(sr);
@@ -371,17 +373,17 @@ START_TEST(test_ch_teardown_fail)
   sr = srunner_create(s);
   srunner_run_all(sr,CK_VERBOSE);
 
-  fail_unless (srunner_ntests_failed(sr) == 1,
+  ck_assert_msg (srunner_ntests_failed(sr) == 1,
 	       "Failure counts not correct for checked teardown failure");
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked teardown failure");
 
   strstat= sr_stat_str(sr);
 
-  fail_unless(strcmp(strstat,
+  ck_assert_msg(strcmp(strstat,
 		     "0%: Checks: 1, Failures: 1, Errors: 0") == 0,
 	      "SRunner stat string incorrect with checked setup failure");
-
+  free(strstat);
 
   trm = tr_str(srunner_failures(sr)[0]);
 
@@ -391,9 +393,9 @@ START_TEST(test_ch_teardown_fail)
     snprintf(errm, sizeof(errm),
 	     "Bad failed checked teardown tr msg (%s)", trm);
     
-    fail (errm);
+    ck_abort_msg (errm);
   }
-  
+  free(trm);
 }
 END_TEST
 
@@ -413,17 +415,17 @@ START_TEST(test_ch_teardown_sig)
   sr = srunner_create(s);
   srunner_run_all(sr,CK_VERBOSE);
 
-  fail_unless (srunner_ntests_failed(sr) == 1,
+  ck_assert_msg (srunner_ntests_failed(sr) == 1,
 	       "Failure counts not correct for checked teardown signal");
-  fail_unless (srunner_ntests_run(sr) == 1,
+  ck_assert_msg (srunner_ntests_run(sr) == 1,
 	       "Test run counts not correct for checked teardown signal");
 
   strstat= sr_stat_str(sr);
 
-  fail_unless(strcmp(strstat,
+  ck_assert_msg(strcmp(strstat,
 		     "0%: Checks: 1, Failures: 0, Errors: 1") == 0,
 	      "SRunner stat string incorrect with checked teardown signal");
-
+  free(strstat);
 
   trm = tr_str(srunner_failures(sr)[0]);
 
@@ -434,21 +436,21 @@ START_TEST(test_ch_teardown_sig)
     snprintf(errm, sizeof(errm),
 	     "Bad msg (%s)", trm);
     
-    fail (errm);
+    ck_abort_msg (errm);
   }
-  
+  free(trm);
 }
 END_TEST
 
 /* Teardowns are run in reverse order */
 static void sub_ch_teardown_dual_1(void)
 {
-  fail_unless(testval_down == 6, "Second teardown failed");
+  ck_assert_msg(testval_down == 6, "Second teardown failed");
 }
 
 static void sub_ch_teardown_dual_2(void)
 {
-  fail_unless(testval_down == 3, "First teardown failed");
+  ck_assert_msg(testval_down == 3, "First teardown failed");
   testval_down += 3;
 }
 
@@ -484,6 +486,7 @@ START_TEST(test_ch_teardown_two_teardowns_fork)
     for (i = 0; i < nr_of_failures; i++) {
       char *trm = tr_str(tra[i]);
       if (strlen(errm) + strlen(trm) > 1022) {
+        free(trm);
         break;
       } 
       strcat(errm, trm);
@@ -492,7 +495,7 @@ START_TEST(test_ch_teardown_two_teardowns_fork)
     }
     free(tra);
   }
-  fail_unless(nr_of_failures == 0, "Problem with several teardowns\n %s",
+  ck_assert_msg(nr_of_failures == 0, "Problem with several teardowns\n %s",
               errm);
 
   srunner_free(sr);
