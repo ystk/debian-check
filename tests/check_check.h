@@ -26,8 +26,9 @@ Suite *make_fork_suite(void);
 Suite *make_fixture_suite(void);
 Suite *make_pack_suite(void);
 Suite *make_exit_suite(void);
+Suite *make_selective_suite(void);
 
 extern int master_tests_lineno[];
-void init_master_tests_lineno(void);
+void init_master_tests_lineno(int num_master_tests);
 
 #endif /* CHECK_CHECK_H */

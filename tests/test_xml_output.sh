@@ -7,6 +7,7 @@ else
 fi
 
 expected="<?xml version=\"1.0\"?>
+<?xml-stylesheet type=\"text/xsl\" href=\"http://check.sourceforge.net/xml/check_unittest.xslt\"?>
 <testsuites xmlns=\"http://check.sourceforge.net/ns\">
   <suite>
     <title>S1</title>
@@ -63,6 +64,16 @@ expected="<?xml version=\"1.0\"?>
       <message>Iteration 2 failed</message>
     </test>
   </suite>
+  <suite>
+    <title>XML escape &quot; &apos; &lt; &gt; &amp; tests</title>
+    <test result=\"failure\">
+      <fn>ex_xml_output.c:40</fn>
+      <id>test_xml_esc_fail_msg</id>
+      <iteration>0</iteration>
+      <description>description &quot; &apos; &lt; &gt; &amp;</description>
+      <message>fail &quot; &apos; &lt; &gt; &amp; message</message>
+    </test>
+  </suite>
 </testsuites>"
 
 ./ex_xml_output > /dev/null
@@ -75,5 +86,17 @@ if [ x"${expected}" != x"${actual}" ]; then
     echo "${actual}";
     exit 1;
 fi
-    
+
+duration_count=`grep -c \<duration\> test.log.xml`
+if [ x"${duration_count}" != x9 ]; then
+    echo "Wrong number of <duration> elements in test.log.xml";
+    exit 1;
+fi
+
+duration_error=`cat test.log.xml | grep \<duration\> | grep -c "\-1\.000000"`
+if [ x"${duration_error}" != x5 ]; then
+    echo "Wrong format for (or number of) error <duration> elements in test.log.xml";
+    exit 1;
+fi
+
 exit 0

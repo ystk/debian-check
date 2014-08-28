@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <math.h>
 
 #include "check.h"
 #include "check_error.h"
@@ -34,6 +35,8 @@
 #ifndef DEFAULT_TIMEOUT
 #define DEFAULT_TIMEOUT 4
 #endif
+
+#define NANOS_PER_SECONDS 1000000000
 
 int check_major_version = CHECK_MAJOR_VERSION;
 int check_minor_version = CHECK_MINOR_VERSION;
@@ -59,23 +62,42 @@ Suite *suite_create (const char *name)
   return s;
 }
 
+int suite_tcase (Suite *s, const char *tcname)
+{
+  List *l;
+  TCase *tc;
+
+  if (s == NULL)
+    return 0;
+
+  l = s->tclst;
+  for (check_list_front (l); !check_list_at_end (l); check_list_advance (l)) {
+    tc = check_list_val (l);
+    if (strcmp (tcname, tc->name) == 0)
+      return 1;
+  }
+
+  return 0;
+}
+
 static void suite_free (Suite *s)
 {
   List *l;
   if (s == NULL)
     return;
   l = s->tclst;
-  for (list_front(l); !list_at_end(l); list_advance (l)) {
-    tcase_free (list_val(l));
+  for (check_list_front(l); !check_list_at_end(l); check_list_advance (l)) {
+    tcase_free (check_list_val(l));
   }
-  list_free (s->tclst);
+  check_list_free (s->tclst);
   free(s);
 }
 
 TCase *tcase_create (const char *name)
 {
   char *env;
-  int timeout = DEFAULT_TIMEOUT;
+  double timeout_sec = DEFAULT_TIMEOUT;
+  
   TCase *tc = emalloc (sizeof(TCase)); /*freed in tcase_free */
   if (name == NULL)
     tc->name = "";
@@ -84,21 +106,25 @@ TCase *tcase_create (const char *name)
 
   env = getenv("CK_DEFAULT_TIMEOUT");
   if (env != NULL) {
-    int tmp = atoi(env);
-    if (tmp >= 0) {
-      timeout = tmp;
+    char * endptr = NULL;
+    double tmp = strtod(env, &endptr);
+    if (tmp >= 0 && endptr != env && (*endptr) == '\0') {
+      timeout_sec = tmp;
     }
   }
 
   env = getenv("CK_TIMEOUT_MULTIPLIER");
   if (env != NULL) {
-    int tmp = atoi(env);
-    if (tmp >= 0) {
-      timeout = timeout * tmp;
+    char * endptr = NULL;
+    double tmp = strtod(env, &endptr);
+    if (tmp >= 0 && endptr != env && (*endptr) == '\0') {
+      timeout_sec = timeout_sec * tmp;
     }
   }  
 
-  tc->timeout = timeout;
+  tc->timeout.tv_sec   = floor(timeout_sec);
+  tc->timeout.tv_nsec  = ((timeout_sec-floor(timeout_sec)) * (double)NANOS_PER_SECONDS);
+  
   tc->tflst = check_list_create();
   tc->unch_sflst = check_list_create();
   tc->ch_sflst = check_list_create();
@@ -111,16 +137,16 @@ TCase *tcase_create (const char *name)
 
 static void tcase_free (TCase *tc)
 {
-  list_apply (tc->tflst, free);
-  list_apply (tc->unch_sflst, free);
-  list_apply (tc->ch_sflst, free);
-  list_apply (tc->unch_tflst, free);
-  list_apply (tc->ch_tflst, free);
-  list_free(tc->tflst);
-  list_free(tc->unch_sflst);
-  list_free(tc->ch_sflst);
-  list_free(tc->unch_tflst);
-  list_free(tc->ch_tflst);
+  check_list_apply (tc->tflst, free);
+  check_list_apply (tc->unch_sflst, free);
+  check_list_apply (tc->ch_sflst, free);
+  check_list_apply (tc->unch_tflst, free);
+  check_list_apply (tc->ch_tflst, free);
+  check_list_free(tc->tflst);
+  check_list_free(tc->unch_sflst);
+  check_list_free(tc->ch_sflst);
+  check_list_free(tc->unch_tflst);
+  check_list_free(tc->ch_tflst);
   
   free(tc);
 }
@@ -129,7 +155,7 @@ void suite_add_tcase (Suite *s, TCase *tc)
 {
   if (s == NULL || tc == NULL)
     return;
-  list_add_end (s->tclst, tc);
+  check_list_add_end (s->tclst, tc);
 }
 
 void _tcase_add_test (TCase *tc, TFun fn, const char *name, int _signal, int allowed_exit_value, int start, int end)
@@ -144,7 +170,7 @@ void _tcase_add_test (TCase *tc, TFun fn, const char *name, int _signal, int all
   tf->signal = _signal; /* 0 means no signal expected */
   tf->allowed_exit_value = allowed_exit_value; /* 0 is default successful exit */
   tf->name = name;
-  list_add_end (tc->tflst, tf);
+  check_list_add_end (tc->tflst, tf);
 }
 
 static Fixture *fixture_create (SFun fun, int ischecked)
@@ -172,31 +198,34 @@ static void tcase_add_fixture (TCase *tc, SFun setup, SFun teardown,
 {
   if (setup) {
     if (ischecked)
-      list_add_end (tc->ch_sflst, fixture_create(setup, ischecked));
+      check_list_add_end (tc->ch_sflst, fixture_create(setup, ischecked));
     else
-      list_add_end (tc->unch_sflst, fixture_create(setup, ischecked));
+      check_list_add_end (tc->unch_sflst, fixture_create(setup, ischecked));
   }
 
   /* Add teardowns at front so they are run in reverse order. */
   if (teardown) {
     if (ischecked)
-      list_add_front (tc->ch_tflst, fixture_create(teardown, ischecked));
+      check_list_add_front (tc->ch_tflst, fixture_create(teardown, ischecked));
     else
-      list_add_front (tc->unch_tflst, fixture_create(teardown, ischecked));  
+      check_list_add_front (tc->unch_tflst, fixture_create(teardown, ischecked));  
   }
 }
 
-void tcase_set_timeout (TCase *tc, int timeout)
+void tcase_set_timeout (TCase *tc, double timeout)
 {
   if (timeout >= 0) {
     char *env = getenv("CK_TIMEOUT_MULTIPLIER");
     if (env != NULL) {
-      int tmp = atoi(env);
-      if (tmp >= 0) {
+      char * endptr = NULL;
+      double tmp = strtod(env, &endptr);
+      if (tmp >= 0 && endptr != env && (*endptr) == '\0') {
         timeout = timeout * tmp;
       }
     }
-    tc->timeout = timeout;
+    
+  tc->timeout.tv_sec   = floor(timeout);
+  tc->timeout.tv_nsec  = ((timeout-floor(timeout)) * (double)NANOS_PER_SECONDS);
   }
 }
 
@@ -211,7 +240,7 @@ void _mark_point (const char *file, int line)
   send_loc_info (file, line);
 }
 
-void _fail_unless (int result, const char *file,
+void _ck_assert_msg (int result, const char *file,
                    int line, const char *expr, ...)
 {
   const char *msg;
@@ -232,6 +261,8 @@ void _fail_unless (int result, const char *file,
 #ifdef _POSIX_VERSION
       exit(1);
 #endif /* _POSIX_VERSION */
+    } else {
+      longjmp(error_jmp_buffer, 1);
     }
   }
 }
@@ -241,7 +272,7 @@ SRunner *srunner_create (Suite *s)
   SRunner *sr = emalloc (sizeof(SRunner)); /* freed in srunner_free */
   sr->slst = check_list_create();
   if (s != NULL)
-    list_add_end(sr->slst, s);
+    check_list_add_end(sr->slst, s);
   sr->stats = emalloc (sizeof(TestStats)); /* freed in srunner_free */
   sr->stats->n_checked = sr->stats->n_failed = sr->stats->n_errors = 0;
   sr->resultlst = check_list_create();
@@ -257,7 +288,7 @@ void srunner_add_suite (SRunner *sr, Suite *s)
   if (s == NULL)
     return;
 
-  list_add_end(sr->slst, s);
+  check_list_add_end(sr->slst, s);
 }
 
 void srunner_free (SRunner *sr)
@@ -269,19 +300,19 @@ void srunner_free (SRunner *sr)
   
   free (sr->stats);
   l = sr->slst;
-  for (list_front(l); !list_at_end(l); list_advance(l)) {
-    suite_free(list_val(l));
+  for (check_list_front(l); !check_list_at_end(l); check_list_advance(l)) {
+    suite_free(check_list_val(l));
   }
-  list_free(sr->slst);
+  check_list_free(sr->slst);
 
   l = sr->resultlst;
-  for (list_front(l); !list_at_end(l); list_advance(l)) {
-    tr = list_val(l);
+  for (check_list_front(l); !check_list_at_end(l); check_list_advance(l)) {
+    tr = check_list_val(l);
     free(tr->file);
     free(tr->msg);
     free(tr);
   }
-  list_free (sr->resultlst);
+  check_list_free (sr->resultlst);
 
   free (sr);
 }
@@ -304,8 +335,8 @@ TestResult **srunner_failures (SRunner *sr)
   trarray = malloc (sizeof(trarray[0]) * srunner_ntests_failed (sr));
 
   rlst = sr->resultlst;
-  for (list_front(rlst); !list_at_end(rlst); list_advance(rlst)) {
-    TestResult *tr = list_val(rlst);
+  for (check_list_front(rlst); !check_list_at_end(rlst); check_list_advance(rlst)) {
+    TestResult *tr = check_list_val(rlst);
     if (non_pass(tr->rtype))
       trarray[i++] = tr;
     
@@ -322,8 +353,8 @@ TestResult **srunner_results (SRunner *sr)
   trarray = malloc (sizeof(trarray[0]) * srunner_ntests_run (sr));
 
   rlst = sr->resultlst;
-  for (list_front(rlst); !list_at_end(rlst); list_advance(rlst)) {
-    trarray[i++] = list_val(rlst);
+  for (check_list_front(rlst); !check_list_at_end(rlst); check_list_advance(rlst)) {
+    trarray[i++] = check_list_val(rlst);
   }
   return trarray;
 }
@@ -356,6 +387,7 @@ static void tr_init (TestResult *tr)
   tr->file = NULL;
   tr->tcname = NULL;
   tr->tname = NULL;
+  tr->duration = -1;
 }
 
 

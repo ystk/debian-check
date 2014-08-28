@@ -1,3 +1,78 @@
+check (0.9.10-6.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Ensure config.{sub,guess} are up to date using autotools-dev (closes: #733038)
+
+ -- Wookey <wookey@debian.org>  Mon, 14 Apr 2014 01:26:38 +0000
+
+check (0.9.10-6) unstable; urgency=low
+
+  * add -pthread to both --libs and --cflags of check.pc (sigh)
+
+ -- Robert Lemmen <robertle@semistable.com>  Mon, 25 Nov 2013 20:10:47 +0000
+
+check (0.9.10-5) unstable; urgency=low
+
+  * debian/patches/03texi.patch: Update patch and remove version and date
+    information from check.info to handle Multi-Arch:Same (closes: #718200).
+  * debian/rules:
+    - Remove doc/check.info before build so it gets regenerated.
+    - Remove first line from doc/check.info to handle Multi-Arch:Same.
+  * debian/control: Add Build-Depends texinfo to build check.info.
+
+ -- Thomas Bechtold <thomasbechtold@jpberlin.de>  Sat, 17 Aug 2013 20:15:46 +0200
+
+check (0.9.10-4) unstable; urgency=low
+
+  * debian/patches: Add 04setitimer_hurd.patch to fix build on hurd (closes:
+    #715166).
+
+ -- Thomas Bechtold <thomasbechtold@jpberlin.de>  Wed, 10 Jul 2013 09:46:55 +0200
+
+check (0.9.10-3) unstable; urgency=low
+
+  * Switch to dpkg-source 3.0 (quilt) format.
+    - Add debian/patches/01pkgconfig.patch.
+    - Add debian/patches/02awk.patch.
+    - Add debian/patches/03texi.patch.
+  * debian/patches/01pkgconfig.patch: Replace @PTHREAD_CFLAGS@ with -pthread
+    (closes: #712140).
+  * Remove doc/example/src/money.1.c.debdiff.
+  * Revert changes to doc/stamp-vti.
+  * Revert changes to doc/version.texi.
+  * debian/rules:
+    - Recognize DEB_BUILD_OPTIONS=noopt (closes: #690890).
+    - Run testsuite after build (closes: #690834).
+  * debian/control: Add Vcs-Browser and Vcs-Git fields.
+
+ -- Thomas Bechtold <thomasbechtold@jpberlin.de>  Fri, 21 Jun 2013 11:23:31 +0200
+
+check (0.9.10-2) unstable; urgency=low
+
+  * Make pkg-config return the correct flags for static liking even
+    when called without --static (closes: #711599)
+  * Make check explicitely depend on mawk, unfortunately mawk and gawk
+    are somewhat incompatible (see: #691684). This is also a partial 
+    solution to #711566.
+  * Removed a comment from /usr/include/check_stdint.h that changed with 
+    the compiler used for building, breaking multi-arch (closes: #711566)
+
+ -- Robert Lemmen <robertle@semistable.com>  Mon, 10 Jun 2013 15:11:21 +0100
+
+check (0.9.10-1) unstable; urgency=low
+
+  * Add Thomas Bechtold to uploades, he also did the following changes:
+  * New upstream release (closes: #709969)
+  * Convert to Multi-Arch: same (thanks to Colin Watson) (closes: #693221).
+  * Remove obsolete debian/check.files (since we no longer use
+    dh_movefiles), and remove a related hack in debian/rules (thanks to Colin
+    Watson).
+  * debian/control:
+    - Bump Standards-Version to 3.9.4.
+    - Remove Build-Conflicts with textinfo.
+
+ -- Robert Lemmen <robertle@semistable.com>  Fri, 07 Jun 2013 11:52:15 +0100
+
 check (0.9.8-2) unstable; urgency=low
 
   * Revert stupid change to check.m4 (closes: #528047, #581354)

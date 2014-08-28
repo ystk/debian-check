@@ -4,10 +4,10 @@
 # Prelude.
 AC_PREREQ([2.59])
 
-AC_INIT([Check], [0.9.8], [check-devel at lists dot sourceforge dot net])
+AC_INIT([Check], [0.9.10], [check-devel at lists dot sourceforge dot net])
 CHECK_MAJOR_VERSION=0
 CHECK_MINOR_VERSION=9
-CHECK_MICRO_VERSION=8
+CHECK_MICRO_VERSION=10
 CHECK_VERSION=$CHECK_MAJOR_VERSION.$CHECK_MINOR_VERSION.$CHECK_MICRO_VERSION
 
 # unique source file --- primitive safety check 
@@ -28,7 +28,8 @@ AC_USE_SYSTEM_EXTENSIONS
 # really severe build strictness
 AM_INIT_AUTOMAKE([-Wall -Werror gnits 1.9.6])
 
-# FIXME: find the other places this stuff is used
+# From patch 2803433, request system extensions to generate 64-bit safe code
+AC_USE_SYSTEM_EXTENSIONS
 
 AC_SUBST(CHECK_MAJOR_VERSION)
 AC_SUBST(CHECK_MINOR_VERSION)
@@ -47,7 +48,7 @@ AC_HELP_STRING([--enable-gcov],
 esac], [enable_gcov=false ])
 
 if test x$enable_gcov = xtrue ; then
-  if test -n "$GCC"; then
+  if test x"$GCC" != xyes; then
     AC_MSG_ERROR([gcov only works if gcc is used])
   fi
 
@@ -84,7 +85,7 @@ AC_HELP_STRING([--enable-subunit],
     ;;
   no)
     enable_subunit=false
-    echoo "Disabled subunit support"
+    echo "Disabled subunit support"
     ;;
   autodetect)
     echo "Subunit support will enable automatically."
@@ -101,6 +102,9 @@ AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_INSTALL
 AC_PROG_LN_S
+# for non-POSIX archivers like the one on OS X
+# use m4_ifdef to work on older automake (1.11)
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 AC_PROG_LIBTOOL
 
 # add these options to CFLAGS if the compiler supports them
@@ -116,60 +120,57 @@ AC_CHECK_PROGS(GCOV, gcov, false)
 AC_CHECK_PROGS(LCOV, lcov, false)
 AC_CHECK_PROGS(GENHTML, genhtml, false)
 AC_CHECK_PROGS(TEX, tex, false)
-if test -n "$TEX"; then
+if test "$TEX" = "false"; then
     # Make it [somewhat] clear to maintainers that tex is missing. Not an error
     # though because 'make install' (which users need) does not build the docs
     # anyway.
     AC_MSG_WARN(tex not installed: cannot rebuild HTML documentation.)
 fi
 
-# Checks for libraries.
+# Check if floor is in the math library, and if so add -lm to LIBS
+AC_CHECK_LIB([m], [floor])
+
+# Check if clock_gettime, timer_create, timer_settime, and timer_delete are available in lib rt, and if so,
+# add -lrt to LIBS
+AC_CHECK_LIB([rt], [clock_gettime, timer_create, timer_settime, timer_delete])
+
+# check that struct itimerspec is defined in time.h. If not, we need to
+# define it in libcompat.h
+AC_CHECK_MEMBERS([struct itimerspec.it_interval, struct itimerspec.it_value], [], [AC_DEFINE_UNQUOTED(STRUCT_ITIMERSPEC_DEFINITION_MISSING, 1, "Need to define the itimerspec structure")], [#include <time.h>])
 
 # Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([fcntl.h stddef.h stdint.h stdlib.h string.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([fcntl.h stddef.h stdlib.h string.h sys/time.h unistd.h])
+AX_CREATE_STDINT_H(check_stdint.h)
 
-if test xfalse != x"$enable_subunit"; then
-AC_CHECK_LIB(subunit, subunit_test_start, ,
-[case "$enable_subunit" in
- autodetect)
-   enable_subunit=false
-   ;;
- true)
-   AC_MSG_ERROR([libsubunit is required for subunit protocol support. The homepage for subunit is https://launchpad.net/subunit/])
-   ;;
- esac
-])
-fi
-if test xfalse != x"$enable_subunit"; then
-AC_CHECK_HEADER([subunit/child.h], ,
-[case "$enable_subunit" in
- autodetect)
-   enable_subunit=false
-   ;;
- true)
-   AC_MSG_ERROR([The header subunit/child.h could not be succesfully included and is required for subunit protocol support. The homepage for subunit is https://launchpad.net/subunit/])
-   ;;
- esac
-])
-fi
-if test xfalse = x"$enable_subunit"; then
+AS_IF([test x"$enable_subunit" != "xfalse" && test x"$enable_subunit" != "xtrue"], [
+	PKG_CHECK_EXISTS([libsubunit], [:], [enable_subunit=false])
+	])
+AS_IF([test x"$enable_subunit" != "xfalse"], [
+	PKG_CHECK_MODULES([LIBSUBUNIT], [libsubunit])
+	])
+if test "xfalse" = x"$enable_subunit"; then
 ENABLE_SUBUNIT="0"
+LIBSUBUNIT_PC=""
 else
 ENABLE_SUBUNIT="1"
+LIBSUBUNIT_PC="libsubunit"
 fi
 AC_SUBST(ENABLE_SUBUNIT)
+AC_SUBST([LIBSUBUNIT_PC])
 AC_DEFINE_UNQUOTED(ENABLE_SUBUNIT, $ENABLE_SUBUNIT, [Subunit protocol result output])
 
 AM_CONDITIONAL(SUBUNIT, test x"$enable_subunit" != "xfalse")
-
 
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
+AC_TYPE_INTMAX_T
+AC_TYPE_UINTMAX_T
+AC_TYPE_UINT32_T
 AC_HEADER_TIME
 AC_STRUCT_TM
 
@@ -180,18 +181,46 @@ AC_CHECK_SIZEOF(long, 4)
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_FUNC_REALLOC
-AC_REPLACE_FUNCS([fileno localtime_r pipe putenv setenv sleep strdup strsignal unsetenv])
-AC_CHECK_DECLS([fileno, localtime_r, pipe, putenv, setenv, sleep, strdup, strsignal, unsetenv])
+AC_REPLACE_FUNCS([clock_gettime timer_create timer_settime timer_delete fileno localtime_r pipe putenv setenv sleep strdup strsignal unsetenv])
+AC_CHECK_DECLS([clock_gettime, timer_create, timer_settime, timer_delete, fileno, localtime_r, pipe, putenv, setenv, sleep, strdup, strsignal, unsetenv])
+
+# Check if the system's snprintf (and its variations) are C99 compliant.
+# If they are not, use the version in libcompat.
+HW_FUNC_VSNPRINTF
+HW_FUNC_SNPRINTF
+HW_FUNC_VASPRINTF
+HW_FUNC_ASPRINTF
 
 # Checks for pthread implementation.
 ACX_PTHREAD
 CC="$PTHREAD_CC"
+
+# Check for whether we can install checkmk (we have a usable awk)
+AC_ARG_VAR([AWK_PATH],[Awk interpreter command])
+AC_PATH_PROG(AWK_PATH, $AWK, [*NO AWK*])
+AM_CONDITIONAL([INSTALL_CHECKMK], [test "x$AWK_PATH" != 'x*NO AWK*'])
+
+# Certain awk implementations disagree with each other on how to
+# substitute doubled backslashes in gsub()
+AC_SUBST(AWK_GSUB_DBL_BSLASH, '\\\\')
+
+AS_IF([test "x$AWK_PATH" = 'x*NO AWK*'],
+      [AC_MSG_WARN([Couldn't find a usable awk; won't install checkmk.])],
+
+      # Determine correct number of backslashes for gsub's replacement
+      # value.
+      [AS_IF([echo '\' |
+              "$AWK_PATH" '{ gsub("\\\\", "\\\\", $0); print }' |
+              grep '^\\$' >/dev/null 2>&1], AWK_GSUB_DBL_BSLASH='\\\\\\\\')
+       AC_CONFIG_FILES(checkmk/checkmk)
+       AC_CONFIG_COMMANDS([checkmk-x], [chmod +x checkmk/checkmk])])
 
 # Output files
 AC_CONFIG_HEADERS([config.h])
 
 AC_CONFIG_FILES([check.pc
                  Makefile
+                 checkmk/Makefile
 		 doc/Makefile
 		 lib/Makefile
                  src/check.h

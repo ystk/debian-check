@@ -25,6 +25,8 @@
 #include <stddef.h>
 #include <string.h>
 
+#include <check_stdint.h>
+
 /* Check: a unit test framework for C
 
    Check is a unit test framework for C. It features a simple
@@ -35,10 +37,33 @@
    can be used within source code editors and IDEs.
 
    Unit tests are created with the START_TEST/END_TEST macro
-   pair. The fail_unless and fail macros are used for creating
-   checks within unit tests; the mark_point macro is useful for
-   trapping the location of signals and/or early exits.
-
+   pair. The mark_point macro is useful for trapping the location 
+   of signals and/or early exits. The following calls are used for
+   creating checks within unit tests, where ... represents arguments
+   given to a printf:
+      Asserting an expression:
+         ck_assert(expr)
+         ck_assert_msg(expr, ...)
+      Aborting a test:
+         ck_abort()
+         ck_abort_msg(...)
+      Check the relationship between two integers:
+         ck_assert_int_eq
+         ck_assert_int_ne
+         ck_assert_int_lt
+         ck_assert_int_le
+         ck_assert_int_gt
+         ck_assert_int_ge
+      Check the relationship between two strings:
+         ck_assert_str_eq
+         ck_assert_str_ne
+         ck_assert_str_lt
+         ck_assert_str_le
+         ck_assert_str_gt
+         ck_assert_str_ge
+      Check the relationship between two pointers:
+         ck_assert_ptr_eq
+         ck_assert_ptr_ne
 
    Test cases are created with tcase_create, unit tests are added
    with tcase_add_test
@@ -90,7 +115,7 @@ CK_CPPSTART
   
 #define CHECK_MAJOR_VERSION (0)
 #define CHECK_MINOR_VERSION (9)
-#define CHECK_MICRO_VERSION (8)
+#define CHECK_MICRO_VERSION (10)
 
 extern int CK_EXPORT check_major_version;
 extern int CK_EXPORT check_minor_version;
@@ -119,6 +144,10 @@ typedef struct Suite Suite;
  
 /* Creates a test suite with the given name */
 Suite * CK_EXPORT suite_create (const char *name);
+
+/* Determines whether a given test suite contains a case named after a
+   given string.  */
+int suite_tcase (Suite *s, const char *tcname);
 
 /* Add a test case to a suite */
 void CK_EXPORT suite_add_tcase (Suite *s, TCase *tc);
@@ -196,7 +225,7 @@ void CK_EXPORT tcase_add_checked_fixture (TCase *tc, SFun setup, SFun teardown);
    The timeout can also be set globaly with the environment variable
    CK_DEFAULT_TIMEOUT, the specific setting always takes precedence.
 */
-void CK_EXPORT tcase_set_timeout (TCase *tc, int timeout);
+void CK_EXPORT tcase_set_timeout (TCase *tc, double timeout);
  
 /* Internal function to mark the start of a test function */
 void CK_EXPORT tcase_fn_start (const char *fname, const char *file, int line);
@@ -212,49 +241,93 @@ static void __testname (int _i CK_ATTRIBUTE_UNUSED)\
 /* End a unit test */
 #define END_TEST }
 
-/* Fail the test case unless expr is true */
+/* Old check fail API, use new check fail API for newly written code. */
+
+/* Fail the test case unless expr is false */
+#define fail_unless ck_assert_msg
+
+/* Fail the test case if expr is false */
 /* The space before the comma sign before ## is essential to be compatible
    with gcc 2.95.3 and earlier.
+   FIXME: these macros may conflict with C89 if expr is
+   FIXME:   strcmp (str1, str2) due to excessive string length.
 */
-#define fail_unless(expr, ...)\
-        _fail_unless(expr, __FILE__, __LINE__,\
-        "Assertion '"#expr"' failed" , ## __VA_ARGS__, NULL)
-
-/* Fail the test case if expr is true */
-/* The space before the comma sign before ## is essential to be compatible
-   with gcc 2.95.3 and earlier.
-*/
-
-/* FIXME: these macros may conflict with C89 if expr is 
-   FIXME:   strcmp (str1, str2) due to excessive string length. */
 #define fail_if(expr, ...)\
-        _fail_unless(!(expr), __FILE__, __LINE__,\
-        "Failure '"#expr"' occured" , ## __VA_ARGS__, NULL)
+  _ck_assert_msg(!(expr), __FILE__, __LINE__,\
+    "Failure '"#expr"' occured" , ## __VA_ARGS__, NULL)
 
-/* Always fail */
-#define fail(...) _fail_unless(0, __FILE__, __LINE__, "Failed" , ## __VA_ARGS__, NULL)
+#define fail ck_abort_msg
 
-/* Non macro version of #fail_unless, with more complicated interface */
-void CK_EXPORT _fail_unless (int result, const char *file,
+/* Non macro version of #ck_assert_msg, with more complicated interface */
+void CK_EXPORT _ck_assert_msg (int result, const char *file,
                              int line, const char *expr, ...);
 
 /* New check fail API. */
-#define ck_abort() ck_abort_msg(NULL)
-#define ck_abort_msg fail
+
+/* Fail the test case if expr is false */
+/* The space before the comma sign before ## is essential to be compatible
+   with gcc 2.95.3 and earlier.
+*/
 #define ck_assert(C) ck_assert_msg(C, NULL)
-#define ck_assert_msg fail_unless
+#define ck_assert_msg(expr, ...) \
+  _ck_assert_msg(expr, __FILE__, __LINE__,\
+    "Assertion '"#expr"' failed" , ## __VA_ARGS__, NULL)
 
-/* Integer comparsion macros with improved output compared to fail_unless(). */
-/* O may be any comparion operator. */
-#define _ck_assert_int(X, O, Y) ck_assert_msg((X) O (Y), "Assertion '"#X#O#Y"' failed: "#X"==%d, "#Y"==%d", X, Y) 
-#define ck_assert_int_eq(X, Y) _ck_assert_int(X, ==, Y) 
-#define ck_assert_int_ne(X, Y) _ck_assert_int(X, !=, Y) 
+/* Always fail */
+#define ck_abort() ck_abort_msg(NULL)
+#define ck_abort_msg(...) _ck_assert_msg(0, __FILE__, __LINE__, "Failed" , ## __VA_ARGS__, NULL)
 
-/* String comparsion macros with improved output compared to fail_unless() */
-#define _ck_assert_str(C, X, O, Y) ck_assert_msg(C, "Assertion '"#X#O#Y"' failed: "#X"==\"%s\", "#Y"==\"%s\"", X, Y) 
-#define ck_assert_str_eq(X, Y) _ck_assert_str(!strcmp(X, Y), X, ==, Y)
-#define ck_assert_str_ne(X, Y) _ck_assert_str(strcmp(X, Y), X, !=, Y)
+/* Signed and unsigned integer comparsion macros with improved output compared to ck_assert(). */
+/* OP may be any comparion operator. */
+#define _ck_assert_int(X, OP, Y) do { \
+  intmax_t _ck_x = (X); \
+  intmax_t _ck_y = (Y); \
+  ck_assert_msg(_ck_x OP _ck_y, "Assertion '"#X#OP#Y"' failed: "#X"==%jd, "#Y"==%jd", _ck_x, _ck_y); \
+} while (0)
+#define ck_assert_int_eq(X, Y) _ck_assert_int(X, ==, Y)
+#define ck_assert_int_ne(X, Y) _ck_assert_int(X, !=, Y)
+#define ck_assert_int_lt(X, Y) _ck_assert_int(X, <, Y)
+#define ck_assert_int_le(X, Y) _ck_assert_int(X, <=, Y)
+#define ck_assert_int_gt(X, Y) _ck_assert_int(X, >, Y)
+#define ck_assert_int_ge(X, Y) _ck_assert_int(X, >=, Y)
 
+#define _ck_assert_uint(X, OP, Y) do { \
+  uintmax_t _ck_x = (X); \
+  uintmax_t _ck_y = (Y); \
+  ck_assert_msg(_ck_x OP _ck_y, "Assertion '"#X#OP#Y"' failed: "#X"==%ju, "#Y"==%ju", _ck_x, _ck_y); \
+} while (0)
+#define ck_assert_uint_eq(X, Y) _ck_assert_uint(X, ==, Y)
+#define ck_assert_uint_ne(X, Y) _ck_assert_uint(X, !=, Y)
+#define ck_assert_uint_lt(X, Y) _ck_assert_uint(X, <, Y)
+#define ck_assert_uint_le(X, Y) _ck_assert_uint(X, <=, Y)
+#define ck_assert_uint_gt(X, Y) _ck_assert_uint(X, >, Y)
+#define ck_assert_uint_ge(X, Y) _ck_assert_uint(X, >=, Y)
+
+/* String comparsion macros with improved output compared to ck_assert() */
+/* OP might be any operator that can be used in '0 OP strcmp(X,Y)' comparison */
+/* The x and y parameter swap in strcmp() is needed to handle >, >=, <, <= operators */
+#define _ck_assert_str(X, OP, Y) do { \
+  const char* _ck_x = (X); \
+  const char* _ck_y = (Y); \
+  ck_assert_msg(0 OP strcmp(_ck_y, _ck_x), \
+    "Assertion '"#X#OP#Y"' failed: "#X"==\"%s\", "#Y"==\"%s\"", _ck_x, _ck_y); \
+} while (0)
+#define ck_assert_str_eq(X, Y) _ck_assert_str(X, ==, Y)
+#define ck_assert_str_ne(X, Y) _ck_assert_str(X, !=, Y)
+#define ck_assert_str_lt(X, Y) _ck_assert_str(X, <, Y)
+#define ck_assert_str_le(X, Y) _ck_assert_str(X, <=, Y)
+#define ck_assert_str_gt(X, Y) _ck_assert_str(X, >, Y)
+#define ck_assert_str_ge(X, Y) _ck_assert_str(X, >=, Y)
+
+/* Pointer comparsion macros with improved output compared to ck_assert(). */
+/* OP may only be == or !=  */
+#define _ck_assert_ptr(X, OP, Y) do { \
+  void* _ck_x = (X); \
+  void* _ck_y = (Y); \
+  ck_assert_msg(_ck_x OP _ck_y, "Assertion '"#X#OP#Y"' failed: "#X"==%p, "#Y"==%p", _ck_x, _ck_y); \
+} while (0)
+#define ck_assert_ptr_eq(X, Y) _ck_assert_ptr(X, ==, Y)
+#define ck_assert_ptr_ne(X, Y) _ck_assert_ptr(X, !=, Y)
 
 /* Mark the last point reached in a unit test
    (useful for tracking down where a segfault, etc. occurs)
@@ -327,6 +400,11 @@ void CK_EXPORT srunner_free (SRunner *sr);
 
 /* Runs an SRunner, printing results as specified (see enum print_output) */
 void CK_EXPORT srunner_run_all (SRunner *sr, enum print_output print_mode);
+
+/* Runs an SRunner specifying test suite and test case by name,
+   printing results as specified (see enum print_output).  A NULL
+   value means "any test suite" or "any test case".  */
+void CK_EXPORT srunner_run (SRunner *sr, const char *sname, const char *tcname, enum print_output print_mode);
 
  
 /* Next functions are valid only after the suite has been

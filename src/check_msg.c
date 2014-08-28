@@ -85,6 +85,14 @@ void send_failure_info(const char *msg)
   ppack(fileno(get_pipe()), CK_MSG_FAIL, (CheckMsg *) &fmsg);
 }
 
+void send_duration_info(int duration)
+{
+  DurationMsg dmsg;
+
+  dmsg.duration = duration;
+  ppack(fileno(get_pipe()), CK_MSG_DURATION, (CheckMsg *) &dmsg);
+}
+
 void send_loc_info(const char * file, int line)
 {
   LocMsg lmsg;
@@ -158,6 +166,7 @@ static TestResult *construct_test_result (RcvMsg *rmsg, int waserror)
   } else {
     tr->ctx = CK_CTX_TEST;
     tr->msg = NULL;
+    tr->duration = rmsg->duration;
     tr_set_loc_by_ctx (tr, CK_CTX_TEST, rmsg);
   }
 
@@ -174,15 +183,42 @@ void teardown_messaging(void)
   teardown_pipe();
 }
 
-static void setup_pipe(void)
+static FILE *
+open_tmp_file (void)
 {
-  if (send_file1 != 0) {
-    if (send_file2 != 0)
-      eprintf("Only one nesting of suite runs supported", __FILE__, __LINE__);
-    send_file2 = tmpfile();
-  } else {
-    send_file1 = tmpfile();
-  }
+  /* workaround from Bug 3314868, but maybe tmpfile works if TMPDIR is set */
+  /* also note that mkstemp is apparently a C90 replacement for tmpfile */
+  /* perhaps all we need to do on Windows is set TMPDIR to whatever is
+     stored in TEMP for tmpfile to work */
+  /* it's also not clear if we need _tempnam instead of tempnam on WIN32 */
+  /* and finally, the "b" from "w+b" is ignored on OS X, not sure about WIN32 */
+  FILE *file = tmpfile ();
+#ifdef WIN32
+  if (file == NULL)
+    {
+      char *tmp = getenv ("TEMP");
+      char *tmp_file = _tempnam (tmp, "check_");
+      file = fopen (tmp_file, "w+b");
+      free (tmp_file);
+    }
+#endif /* WIN32 */
+  return file;
+}
+
+static void
+setup_pipe (void)
+{
+  if (send_file1 == NULL)
+    {
+      send_file1 = open_tmp_file ();
+      return;
+    }
+  if (send_file2 == NULL)
+    {
+      send_file2 = open_tmp_file ();
+      return;
+    }
+  eprintf ("Only one nesting of suite runs supported", __FILE__, __LINE__);
 }
 
 static void teardown_pipe(void)

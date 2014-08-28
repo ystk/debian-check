@@ -5,16 +5,30 @@
 
 export DESTDIR=$(shell pwd)/debian/check
 
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+
+ifneq (,$(filter noopt,$(DEB_BUILD_OPTIONS)))
+	CFLAGS_OPT := -O0
+else
+	CFLAGS_OPT := -O2
+endif
+
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	 ./configure --prefix=/usr --infodir=/usr/share/info --enable-plain-docdir
+	dh_autotools-dev_updateconfig
+	 CFLAGS="$(CFLAGS_OPT)" ./configure --prefix=/usr \
+		--libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
+		--infodir=/usr/share/info --enable-plain-docdir
 	touch configure-stamp
 
 configure-pic: configure-stamp-pic
 configure-stamp-pic:
 	dh_testdir
-	CFLAGS="-g -O2 -fPIC" ./configure --prefix=/usr --infodir=/usr/share/info \
+	dh_autotools-dev_updateconfig
+	CFLAGS="-fPIC $(CFLAGS_OPT)" ./configure --prefix=/usr \
+		--libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
+		--infodir=/usr/share/info \
 		--enable-plain-docdir
 	touch configure-stamp-pic
 
@@ -26,9 +40,15 @@ build-stamp:
 
 build-pic: configure-stamp-pic build-stamp-pic
 build-stamp-pic:
+	#remove check.info so it will be regenerated
+	rm -f doc/check.info
 	dh_testdir
 	$(MAKE)
 	mv src/.libs/libcheck.a src/libcheck_pic.a
+	#run the testsuite
+	dh_auto_test
+	#remove dynamic content for Multi-Arch:same (see #718200)
+	sed -i -e "1d" doc/check.info
 	touch build-stamp-pic
 
 clean:
@@ -37,8 +57,7 @@ clean:
 	rm -f build-stamp configure-stamp build-stamp-pic configure-stamp-pic
 	[ ! -f Makefile ] || $(MAKE) distclean
 	rm -f src/libcheck_pic.a
-	# hack!
-	rm -f debian/files
+	dh_autotools-dev_restoreconfig
 	dh_clean
 
 install: build
@@ -46,7 +65,7 @@ install: build
 	dh_testroot
 	dh_installdirs
 
-	$(MAKE) DESTDIR=$(DESTDIR) install 
+	$(MAKE) DESTDIR=$(DESTDIR) install
 	# fix the installation
 	rm -f debian/check/usr/share/doc/check/COPYING*
 
@@ -55,8 +74,9 @@ install-pic: build-pic
 	dh_testroot
 	dh_prep
 	dh_installdirs
-	cp src/libcheck_pic.a debian/check/usr/lib/
-	
+	mkdir -p debian/check/usr/lib/$(DEB_HOST_MULTIARCH)
+	cp src/libcheck_pic.a debian/check/usr/lib/$(DEB_HOST_MULTIARCH)/
+
 binary-arch: install-pic install
 	dh_testdir
 	dh_testroot
@@ -66,10 +86,11 @@ binary-arch: install-pic install
 	dh_installchangelogs ChangeLog
 	dh_compress -XMakefile
 	# fix the setup
+	sed -i '/\/\* generated using gnu compiler gcc.*/d' debian/check/usr/include/check_stdint.h
 	rm -f debian/check/usr/share/doc/check/ChangeLog.gz
-	rm -f debian/check/usr/lib/libcheck.so.*
-	rm -f debian/check/usr/lib/libcheck.so
-	rm -f debian/check/usr/lib/libcheck.la
+	rm -f debian/check/usr/lib/$(DEB_HOST_MULTIARCH)/libcheck.so.*
+	rm -f debian/check/usr/lib/$(DEB_HOST_MULTIARCH)/libcheck.so
+	rm -f debian/check/usr/lib/$(DEB_HOST_MULTIARCH)/libcheck.la
 	rm -f debian/check/usr/share/info/dir.gz
 	rm -rf debian/check/usr/share/doc/check/example
 	dh_link
@@ -82,6 +103,9 @@ binary-arch: install-pic install
 
 binary-indep:
 	# nothing to do
+
+build-arch: build
+build-indep: build
 
 binary: binary-arch
 .PHONY: build clean binary-indep binary-arch binary install configure
